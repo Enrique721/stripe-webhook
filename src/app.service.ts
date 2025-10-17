@@ -1,42 +1,69 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { EventMainClassType, StrategyStorage } from './strategy/strategyStorage';
 import { IStrategy } from './strategy/strategy.interface';
 import Stripe from 'stripe';
+import { InjectModel } from '@nestjs/mongoose';
+import { WebhookEvent } from './schema/webhookEvent/webhookEvent.schema';
+import { Model } from 'mongoose';
+import { NotFoundError } from 'rxjs';
 
 @Injectable()
-export class AppService implements OnModuleInit{
-
-  private stripe: Stripe;
+export class AppService {
 
   constructor(
+    @InjectModel("webhookevents", "Dash")
+    private readonly webhookModel: Model<WebhookEvent>,
     private readonly strategyStorage: StrategyStorage,
-    private readonly configService: ConfigService,
   ) {}
-
-  onModuleInit() {
-    try {
-      const privateKey = this.configService.get<string>("stripe.privateKey");
-
-      if (!privateKey)
-        throw new Error("Require private stripe key");
-
-      this.stripe = new Stripe(privateKey, { apiVersion: "2025-09-30.clover" });
-    } catch (e) {
-      console.error(e.message);
-    }
-  }
 
 
   async handler(eventStripe: Stripe.Event) {
     const [mainClass, ..._subClass] = eventStripe.type.split(".");
-    const strategy: IStrategy = this.strategyStorage.getStrategy(mainClass as EventMainClassType);
+    console.log(mainClass);
+    console.log(eventStripe.type);
+    try {
 
-    const parsedObject: any = strategy.parseObject(eventStripe);
-    strategy.doOperation(parsedObject);
+      const event = await this.createEventLog(eventStripe)
+      if (!event)
+        return;
+
+      const strategy: IStrategy | null = this.strategyStorage.getStrategy(mainClass as EventMainClassType);
+      if (!strategy)
+        return;
+
+      strategy.doOperation(eventStripe);
+
+      event.processed = true;
+      await event.save();
+    } catch (e) {
+      throw new InternalServerErrorException("Event not properly treated");
+    }
   }
 
-  getStripeInstance(): Stripe {
-    return this.stripe;
+  private async createEventLog(eventStripe: Stripe.Event) {
+    const status = await this.webhookModel.findOne({eventId: eventStripe.id, processed: true});
+
+    if (status)
+      return;
+
+    try {
+      const eventIdempondencyObject = this.createWebhookIdempondencyObject(eventStripe);
+      return await this.webhookModel.create(eventIdempondencyObject);
+    } catch (e) {
+      console.error("Failed to save stripe event");
+    }
+
+  }
+
+  private createWebhookIdempondencyObject(event: Stripe.Event): WebhookEvent {
+
+    return {
+      eventId: event.id,
+      eventOp: event.type,
+      idempotencyKey: event.request?.idempotency_key,
+      requestId: event.request?.id,
+      processed: false
+    }
   }
 }

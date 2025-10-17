@@ -1,3 +1,4 @@
+import { Injectable } from "@nestjs/common";
 import { BillingStrategy } from "./billing.strategy";
 import { CustomerStrategy } from "./customer.strategy";
 import { InvoiceStrategy } from "./invoice.strategy";
@@ -15,6 +16,8 @@ export type EventMainClassType = "billing"
                                 | "price"
                                 | "product"
 
+
+@Injectable()
 export class StrategyStorage {
 
     constructor(
@@ -27,7 +30,7 @@ export class StrategyStorage {
         private readonly productStrategy: ProductStrategy,
     ) {}
 
-    getStrategy(mainClass: EventMainClassType): IStrategy {
+    getStrategy(mainClass: EventMainClassType): IStrategy | null {
         switch (mainClass) {
             case "billing":
                 return this.billingStrategy;
@@ -51,7 +54,7 @@ export class StrategyStorage {
                 return this.productStrategy;
 
             default:
-                throw new Error(`Unknown event class: ${mainClass}`);
+                return null;
         }
     }
 }

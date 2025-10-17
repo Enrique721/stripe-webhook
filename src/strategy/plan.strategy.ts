@@ -3,9 +3,8 @@ import { IStrategy } from "./strategy.interface";
 import { Injectable } from "@nestjs/common";
 
 @Injectable()
-export class PaymentMethodStrategy implements IStrategy {
+export class PlanStrategy implements IStrategy {
 
     doOperation(eventStripe: Stripe.Event) {
-        
     }
 }

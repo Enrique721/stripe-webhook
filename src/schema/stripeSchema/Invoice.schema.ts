@@ -11,8 +11,8 @@ export class Invoice {
   @Prop({ type: String, required: true })
   stripeSubscriptionId: string;
 
-  @Prop({ type: String, required: true, unique: true })
-  stripeEventId: string;
+  @Prop({ type: String })
+  stripeInvoiceId: string;
 
   @Prop({ type: String })
   stripeProductId: string;
