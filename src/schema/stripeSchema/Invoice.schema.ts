@@ -5,35 +5,40 @@ export type InvoiceDocument = HydratedDocument<Invoice>;
 
 @Schema()
 export class Invoice {
-  @Prop({ type: String, required: true })
-  stripeClientId: string;
 
   @Prop({ type: String, required: true })
-  stripeSubscriptionId: string;
-
-  @Prop({ type: String })
   stripeInvoiceId: string;
 
   @Prop({ type: String })
-  stripeProductId: string;
+  stripeClientId: string;
 
   @Prop({ type: String })
-  stripeEventType: string;
+  stripeSubscriptionId?: string;
 
   @Prop({ type: String })
-  stripeEventAction: string;
+  stripeInvoicePdfUrl?: string;
 
   @Prop({ type: String })
-  lastFourDigits: string;
+  stripeHostedInvoiceUrl?: string;
 
   @Prop({ type: String })
-  invoicePdfUrl?: string;
+  stripeInvoiceStatus?: string;
 
   @Prop({ type: String })
-  invoiceUrl?: string;
+  billingReason?: string;
 
   @Prop({ type: String })
-  stripeStatus: string;
+  stripeCurrency?: string;
+
+  @Prop({ type: Number })
+  amountDue?: number;
+
+  @Prop({ type: Number })
+  amountPaid?: number;
+
+  @Prop({ type: Number })
+  amountRemaining?: number;
+
 }
 
 export const InvoiceSchema = SchemaFactory.createForClass(Invoice);
